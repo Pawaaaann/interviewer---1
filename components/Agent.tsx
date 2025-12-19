@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
-import { vapi } from "@/lib/vapi.sdk";
+import { vapi, isVapiConfigured } from "@/lib/vapi.sdk";
 import { interviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
 
@@ -115,14 +115,14 @@ const Agent = ({
   }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
 
   const handleCall = async () => {
+    if (!isVapiConfigured()) {
+      alert("Voice interview feature is not configured. Please contact the administrator to set up VAPI credentials.");
+      return;
+    }
+
     setCallStatus(CallStatus.CONNECTING);
 
     try {
-      // Check if VAPI is configured
-      if (!process.env.NEXT_PUBLIC_VAPI_WEB_TOKEN) {
-        throw new Error("Interview feature is not configured. Please check your environment variables.");
-      }
-
       if (type === "generate") {
         const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
         if (!workflowId) {
@@ -151,9 +151,9 @@ const Agent = ({
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error("Failed to start interview:", message);
-      alert(`Interview start failed: ${message}`);
+      console.error("Failed to start voice interview:", message);
       setCallStatus(CallStatus.INACTIVE);
+      alert(`Voice interview could not start. Error: ${message}\n\nPlease check that your VAPI credentials are valid.`);
     }
   };
 
