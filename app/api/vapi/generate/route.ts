@@ -1,10 +1,17 @@
-import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
-
+import { GoogleGenAI } from "@google/genai";
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import { interviewDomains } from "@/constants";
+
+// Using Replit AI Integrations for Gemini access
+const ai = new GoogleGenAI({
+  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+  httpOptions: {
+    apiVersion: "",
+    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+  },
+});
 
 export async function POST(request: Request) {
   const { type, role, level, techstack, amount, domain } = await request.json();
@@ -42,9 +49,7 @@ export async function POST(request: Request) {
         Include questions about industry trends, common tools, and real-world applications in this domain.
     ` : '';
 
-    const { text: questions } = await generateText({
-      model: google("gemini-2.0-flash-001"),
-      prompt: `Prepare questions for a job interview.
+    const prompt = `Prepare questions for a job interview.
         The job role is ${role}.
         The job experience level is ${level}.
         The tech stack used in the job is: ${techstack}.
@@ -64,8 +69,17 @@ export async function POST(request: Request) {
         ["Question 1", "Question 2", "Question 3"]
         
         Thank you! <3
-    `,
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
+
+    const questions = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!questions) {
+      throw new Error("Failed to generate interview questions");
+    }
 
     // Parse and validate questions with error handling
     let parsedQuestions;

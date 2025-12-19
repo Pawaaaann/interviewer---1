@@ -1,10 +1,17 @@
 "use server";
 
-import { generateObject } from "ai";
-import { google } from "@ai-sdk/google";
-
+import { GoogleGenAI } from "@google/genai";
 import { db } from "@/firebase/admin";
 import { feedbackSchema } from "@/constants";
+
+// Using Replit AI Integrations for Gemini access
+const ai = new GoogleGenAI({
+  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+  httpOptions: {
+    apiVersion: "",
+    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+  },
+});
 
 export async function createFeedback(params: CreateFeedbackParams) {
   const { interviewId, userId, transcript, feedbackId } = params;
@@ -17,12 +24,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
       )
       .join("");
 
-    const { object } = await generateObject({
-      model: google("gemini-2.0-flash-001", {
-        structuredOutputs: false,
-      }),
-      schema: feedbackSchema,
-      prompt: `
+    const prompt = `
         You are an AI interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
         Transcript:
         ${formattedTranscript}
@@ -33,10 +35,21 @@ export async function createFeedback(params: CreateFeedbackParams) {
         - **Problem-Solving**: Ability to analyze problems and propose solutions.
         - **Cultural & Role Fit**: Alignment with company values and job role.
         - **Confidence & Clarity**: Confidence in responses, engagement, and clarity.
-        `,
-      system:
-        "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
+
+        Return your response as valid JSON with this structure: { "totalScore": number, "categoryScores": { "communicationSkills": number, "technicalKnowledge": number, "problemSolving": number, "culturalFit": number, "confidenceClarity": number }, "strengths": string[], "areasForImprovement": string[], "finalAssessment": string }
+        `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
+
+    const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!responseText) {
+      throw new Error("No response from Gemini");
+    }
+
+    const object = JSON.parse(responseText);
 
     const feedback = {
       interviewId: interviewId,
