@@ -42,34 +42,11 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
 
-    // Create domain-specific prompt enhancement
-    const domainContext = domain ? `
-        This interview is specifically for the ${domain} domain.
-        Focus on domain-specific scenarios, challenges, and best practices.
-        Include questions about industry trends, common tools, and real-world applications in this domain.
-    ` : '';
+    const domainContext = domain ? ` Domain: ${domain}.` : '';
 
-    const prompt = `Prepare questions for a job interview.
-        The job role is ${role}.
-        The job experience level is ${level}.
-        The tech stack used in the job is: ${techstack}.
-        The focus between behavioural and technical questions should lean towards: ${type}.
-        ${domainContext}
-        The amount of questions required is: ${amount}.
-        
-        Create a mix of:
-        - Technical questions specific to the role and tech stack
-        - Problem-solving scenarios relevant to the domain
-        - Behavioral questions about teamwork and communication
-        - Questions about industry best practices and trends
-        
-        Please return only the questions, without any additional text.
-        The questions are going to be read by a voice assistant so do not use "/" or "*" or any other special characters which might break the voice assistant.
-        Return the questions formatted like this:
-        ["Question 1", "Question 2", "Question 3"]
-        
-        Thank you! <3
-    `;
+    const prompt = `Generate ${amount} interview questions for: Role: ${role}, Level: ${level}, Stack: ${techstack}, Type: ${type}${domainContext}
+Return ONLY this JSON: ["Q1", "Q2", ...]
+No "/" or "*" characters.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
