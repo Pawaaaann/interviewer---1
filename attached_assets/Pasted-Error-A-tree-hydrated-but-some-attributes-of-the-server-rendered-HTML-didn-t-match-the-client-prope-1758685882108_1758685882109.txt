@@ -1,0 +1,102 @@
+Error: A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <ErrorBoundary errorComponent={undefined} errorStyles={undefined} errorScripts={undefined}>
+      <LoadingBoundary loading={null}>
+        <HTTPAccessFallbackBoundary notFound={undefined} forbidden={undefined} unauthorized={undefined}>
+          <RedirectBoundary>
+            <RedirectErrorBoundary router={{...}}>
+              <InnerLayoutRouter url="/sign-in" tree={[...]} cacheNode={{lazyData:null, ...}} segmentPath={[...]}>
+                <Page>
+                  <AuthForm type="sign-in">
+                    <div className="card-borde...">
+                      <div className="flex flex-...">
+                        <div>
+                        <h3>
+                        <FormProvider control={{...}} trigger={function trigger} register={function register} ...>
+                          <form onSubmit={function} className="w-full spa...">
+                            ...
+                              <Slot data-slot="form-control" id="«Rj7ndl7»-..." aria-describedby="«Rj7ndl7»-..." ...>
+                                <SlotClone data-slot="form-control" id="«Rj7ndl7»-..." aria-describedby="«Rj7ndl7»-..." ...>
+                                  <Input className="input" type="email" placeholder="Your email..." name="email" value="" ...>
+                                    <input
+                                      type="email"
+                                      data-slot="form-control"
+                                      className="file:text-foreground placeholder:text-muted-foreground selection:bg-p..."
+                                      placeholder="Your email address"
+                                      name="email"
+                                      value=""
+                                      onChange={function useController.useMemo[field]}
+                                      onBlur={function useController.useMemo[field]}
+                                      ref={function useController.useMemo[field]}
+                                      id="«Rj7ndl7»-form-item"
+                                      aria-describedby="«Rj7ndl7»-form-item-description"
+                                      aria-invalid={false}
+-                                     fdprocessedid="i91s1f"
+                                    >
+                            ...
+                              <Slot data-slot="form-control" id="«Rr7ndl7»-..." aria-describedby="«Rr7ndl7»-..." ...>
+                                <SlotClone data-slot="form-control" id="«Rr7ndl7»-..." aria-describedby="«Rr7ndl7»-..." ...>
+                                  <Input className="input" type="password" placeholder="Enter your..." name="password" ...>
+                                    <input
+                                      type="password"
+                                      data-slot="form-control"
+                                      className="file:text-foreground placeholder:text-muted-foreground selection:bg-p..."
+                                      placeholder="Enter your password"
+                                      name="password"
+                                      value=""
+                                      onChange={function useController.useMemo[field]}
+                                      onBlur={function useController.useMemo[field]}
+                                      ref={function useController.useMemo[field]}
+                                      id="«Rr7ndl7»-form-item"
+                                      aria-describedby="«Rr7ndl7»-form-item-description"
+                                      aria-invalid={false}
+-                                     fdprocessedid="1fklv"
+                                    >
+                            <Button className="btn" type="submit">
+                              <button
+                                data-slot="button"
+                                className={"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-m..."}
+                                type="submit"
+-                               fdprocessedid="lyjpu6"
+                              >
++                               Sign In
+                        ...
+                ...
+
+    at createUnhandledError (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_client_43e3ffb8._.js:879:71)
+    at handleClientError (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_client_43e3ffb8._.js:1052:56)
+    at console.error (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_client_43e3ffb8._.js:1191:56)
+    at https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:9382:25
+    at runWithFiberInDEV (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:3501:74)
+    at emitPendingHydrationWarnings (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:9381:13)
+    at completeWork (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:9455:102)
+    at runWithFiberInDEV (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:3501:131)
+    at completeUnitOfWork (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10233:23)
+    at performUnitOfWork (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10170:28)
+    at workLoopConcurrentByScheduler (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10164:58)
+    at renderRootConcurrent (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10146:71)
+    at performWorkOnRoot (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:9784:176)
+    at performWorkOnRootViaSchedulerTask (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10796:9)
+    at MessagePort.performWorkUntilDeadline (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:1952:64)
+    at input (<anonymous>)
+    at Input (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/_8f6ebf3c._.js:689:214)
+    at Object.render (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/_8f6ebf3c._.js:739:237)
+    at Controller (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_41ef64f9._.js:7972:39)
+    at Slot (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_41ef64f9._.js:10134:206)
+    at FormControl (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/_8f6ebf3c._.js:516:214)
+    at Object.render (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/_8f6ebf3c._.js:738:223)
+    at Controller (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/node_modules_41ef64f9._.js:7972:39)
+    at FormField (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/_8f6ebf3c._.js:725:214)
+    at AuthForm (https://5ba5f1a5-9e54-412d-a7fd-7e2ea9ba99ff-00-2z7e6gxr2il1u.pike.replit.dev/_next/static/chunks/_8f6ebf3c._.js:932:231)
+    at Page (rsc://React/Server/file:///home/runner/workspace/.next/server/chunks/ssr/_02de565a._.js?3:142:263)
