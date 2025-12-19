@@ -62,7 +62,7 @@ const Agent = ({
     };
 
     const onError = (error: Error) => {
-      console.log("Error:", error);
+      console.error("VAPI Error:", error?.message || error);
     };
 
     vapi.on("call-start", onCallStart);
@@ -117,26 +117,43 @@ const Agent = ({
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
 
-    if (type === "generate") {
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-        variableValues: {
-          username: userName,
-          userid: userId,
-        },
-      });
-    } else {
-      let formattedQuestions = "";
-      if (questions) {
-        formattedQuestions = questions
-          .map((question) => `- ${question}`)
-          .join("\n");
+    try {
+      // Check if VAPI is configured
+      if (!process.env.NEXT_PUBLIC_VAPI_WEB_TOKEN) {
+        throw new Error("Interview feature is not configured. Please check your environment variables.");
       }
 
-      await vapi.start(interviewer, {
-        variableValues: {
-          questions: formattedQuestions,
-        },
-      });
+      if (type === "generate") {
+        const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
+        if (!workflowId) {
+          throw new Error("Workflow ID not configured");
+        }
+        
+        await vapi.start(workflowId, {
+          variableValues: {
+            username: userName,
+            userid: userId,
+          },
+        });
+      } else {
+        let formattedQuestions = "";
+        if (questions) {
+          formattedQuestions = questions
+            .map((question) => `- ${question}`)
+            .join("\n");
+        }
+
+        await vapi.start(interviewer, {
+          variableValues: {
+            questions: formattedQuestions,
+          },
+        });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to start interview:", message);
+      alert(`Interview start failed: ${message}`);
+      setCallStatus(CallStatus.INACTIVE);
     }
   };
 
