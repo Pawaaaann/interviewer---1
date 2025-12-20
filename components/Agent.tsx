@@ -70,13 +70,35 @@ const Agent = ({
     };
 
     const onError = (error: Error | unknown) => {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("[VAPI] Error event received:", errorMessage);
+      let errorMessage = "";
       
-      // Don't treat normal call-end as an error
-      if (!errorMessage.includes("Meeting ended") && !errorMessage.includes("ejection")) {
-        setError(errorMessage);
-        setCallStatus(CallStatus.ERROR);
+      // Properly serialize error objects
+      if (error instanceof Error) {
+        errorMessage = error.message || String(error);
+      } else if (error && typeof error === "object") {
+        const errorObj = error as any;
+        errorMessage = errorObj.message || errorObj.reason || errorObj.code || JSON.stringify(error);
+      } else {
+        errorMessage = String(error);
+      }
+
+      // Don't treat normal call-end signals as errors (suppress noisy daily-js events)
+      const ignoredMessages = [
+        "Meeting ended",
+        "ejection",
+        "disconnect",
+        "Signaling connection",
+        "meeting state",
+      ];
+
+      const shouldIgnore = ignoredMessages.some(msg => 
+        errorMessage.toLowerCase().includes(msg.toLowerCase())
+      );
+
+      if (!shouldIgnore && errorMessage && errorMessage !== "[object Object]") {
+        console.error("[VAPI] Real error:", errorMessage);
+      } else if (!shouldIgnore) {
+        console.debug("[VAPI] Event:", errorMessage);
       }
     };
 
