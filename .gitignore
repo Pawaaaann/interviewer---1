@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Replit specific
+.replit
+replit.md
+.activity.md
+.replit_integration_files
