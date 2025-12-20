@@ -44,7 +44,7 @@ Evaluate and return JSON with:
 Be specific, constructive, and professional. Focus on actionable feedback.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-pro",
+      model: "gemini-2.5-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
