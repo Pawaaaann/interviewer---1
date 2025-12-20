@@ -35,9 +35,15 @@ Return JSON: { "totalScore": number, "categoryScores": { "communicationSkills": 
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
-    const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    let responseText = response.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!responseText) {
       throw new Error("No response from Gemini");
+    }
+
+    // Extract JSON from markdown code blocks if present
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch && jsonMatch[1]) {
+      responseText = jsonMatch[1].trim();
     }
 
     const object = JSON.parse(responseText);
