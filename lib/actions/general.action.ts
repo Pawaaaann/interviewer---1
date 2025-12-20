@@ -24,14 +24,27 @@ export async function createFeedback(params: CreateFeedbackParams) {
       )
       .join("\n");
 
-    const prompt = `Score this interview on 5 categories (0-100 each):
-Transcript:
+    const prompt = `You are an expert technical interview evaluator. Analyze this interview transcript in detail and provide comprehensive feedback.
+
+Interview Transcript:
 ${formattedTranscript}
 
-Return JSON: { "totalScore": number, "categoryScores": { "communicationSkills": number, "technicalKnowledge": number, "problemSolving": number, "culturalFit": number, "confidenceClarity": number }, "strengths": string[], "areasForImprovement": string[], "finalAssessment": string }`;
+Evaluate and return JSON with:
+1. totalScore: Overall score (0-100)
+2. categoryScores: Score each on 0-100:
+   - communicationSkills: Clarity, articulation, listening
+   - technicalKnowledge: Depth of expertise, accuracy
+   - problemSolving: Approach, analysis, solution quality
+   - culturalFit: Team collaboration, attitude, values alignment
+   - confidenceClarity: Confidence level, decisiveness, clarity of thought
+3. strengths: Top 3-4 key strengths observed
+4. areasForImprovement: Top 3-4 specific areas to improve with examples
+5. finalAssessment: Detailed 2-3 sentence summary with recommendation
+
+Be specific, constructive, and professional. Focus on actionable feedback.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-pro",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
