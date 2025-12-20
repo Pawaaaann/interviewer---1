@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ enum CallStatus {
   CONNECTING = "CONNECTING",
   ACTIVE = "ACTIVE",
   FINISHED = "FINISHED",
+  ERROR = "ERROR",
 }
 
 interface SavedMessage {
@@ -34,13 +35,20 @@ const Agent = ({
   const [messages, setMessages] = useState<SavedMessage[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [lastMessage, setLastMessage] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
   useEffect(() => {
     const onCallStart = () => {
+      console.log("[VAPI] Call started");
       setCallStatus(CallStatus.ACTIVE);
+      setError("");
+      retryCountRef.current = 0;
     };
 
     const onCallEnd = () => {
+      console.log("[VAPI] Call ended normally");
       setCallStatus(CallStatus.FINISHED);
     };
 
@@ -52,17 +60,24 @@ const Agent = ({
     };
 
     const onSpeechStart = () => {
-      console.log("speech start");
+      console.log("[VAPI] Speech started");
       setIsSpeaking(true);
     };
 
     const onSpeechEnd = () => {
-      console.log("speech end");
+      console.log("[VAPI] Speech ended");
       setIsSpeaking(false);
     };
 
-    const onError = (error: Error) => {
-      console.error("VAPI Error:", error?.message || error);
+    const onError = (error: Error | unknown) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("[VAPI] Error event received:", errorMessage);
+      
+      // Don't treat normal call-end as an error
+      if (!errorMessage.includes("Meeting ended") && !errorMessage.includes("ejection")) {
+        setError(errorMessage);
+        setCallStatus(CallStatus.ERROR);
+      }
     };
 
     vapi.on("call-start", onCallStart);
@@ -116,50 +131,78 @@ const Agent = ({
 
   const handleCall = async () => {
     if (!isVapiConfigured()) {
-      alert("Voice interview feature is not configured. Please contact the administrator to set up VAPI credentials.");
+      setError("Voice feature not configured");
+      setCallStatus(CallStatus.ERROR);
       return;
     }
 
     setCallStatus(CallStatus.CONNECTING);
+    setError("");
 
-    try {
-      if (type === "generate") {
-        const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
-        if (!workflowId) {
-          throw new Error("Workflow ID not configured");
+    const attemptCall = async (retryCount = 0) => {
+      try {
+        console.log(`[VAPI] Attempting to start call (attempt ${retryCount + 1}/${maxRetries + 1})`);
+        
+        if (type === "generate") {
+          const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
+          if (!workflowId) {
+            throw new Error("Workflow ID not configured");
+          }
+          
+          await vapi.start(workflowId, {
+            variableValues: {
+              username: userName,
+              userid: userId,
+            },
+          });
+        } else {
+          let formattedQuestions = "";
+          if (questions) {
+            formattedQuestions = questions
+              .map((question) => `- ${question}`)
+              .join("\n");
+          }
+
+          await vapi.start(interviewer, {
+            variableValues: {
+              questions: formattedQuestions,
+            },
+          });
         }
         
-        await vapi.start(workflowId, {
-          variableValues: {
-            username: userName,
-            userid: userId,
-          },
-        });
-      } else {
-        let formattedQuestions = "";
-        if (questions) {
-          formattedQuestions = questions
-            .map((question) => `- ${question}`)
-            .join("\n");
+        retryCountRef.current = 0;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[VAPI] Call attempt ${retryCount + 1} failed:`, message);
+        
+        if (retryCount < maxRetries) {
+          console.log(`[VAPI] Retrying in 2 seconds...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          await attemptCall(retryCount + 1);
+        } else {
+          setCallStatus(CallStatus.INACTIVE);
+          setError(`Failed after ${maxRetries + 1} attempts: ${message}`);
+          throw error;
         }
-
-        await vapi.start(interviewer, {
-          variableValues: {
-            questions: formattedQuestions,
-          },
-        });
       }
+    };
+
+    try {
+      await attemptCall();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error("Failed to start voice interview:", message);
-      setCallStatus(CallStatus.INACTIVE);
-      alert(`Voice interview could not start. Error: ${message}\n\nPlease check that your VAPI credentials are valid.`);
+      console.error("[VAPI] Call start failed:", message);
     }
   };
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
+    console.log("[VAPI] Ending call manually");
     setCallStatus(CallStatus.FINISHED);
-    vapi.stop();
+    try {
+      await vapi.stop();
+    } catch (error) {
+      console.error("[VAPI] Error stopping call:", error);
+    }
   };
 
   return (
@@ -211,9 +254,19 @@ const Agent = ({
         </div>
       )}
 
+      {error && (
+        <div className="fixed bottom-4 left-4 right-4 bg-red-900 text-white p-4 rounded-lg max-w-md mx-auto">
+          <p className="text-sm">{error}</p>
+        </div>
+      )}
+
       <div className="w-full flex justify-center">
         {callStatus !== "ACTIVE" ? (
-          <button className="relative btn-call" onClick={() => handleCall()}>
+          <button 
+            className="relative btn-call" 
+            onClick={() => handleCall()}
+            disabled={callStatus === "CONNECTING"}
+          >
             <span
               className={cn(
                 "absolute animate-ping rounded-full opacity-75",
@@ -224,6 +277,8 @@ const Agent = ({
             <span className="relative">
               {callStatus === "INACTIVE" || callStatus === "FINISHED"
                 ? "Call"
+                : callStatus === "ERROR"
+                ? "Retry"
                 : ". . ."}
             </span>
           </button>
