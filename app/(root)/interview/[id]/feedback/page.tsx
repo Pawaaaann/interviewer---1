@@ -64,14 +64,25 @@ const Feedback = async ({ params }: RouteParams) => {
       {/* Interview Breakdown */}
       <div className="flex flex-col gap-4">
         <h2>Breakdown of the Interview:</h2>
-        {feedback?.categoryScores?.map((category, index) => (
-          <div key={index}>
-            <p className="font-bold">
-              {index + 1}. {category.name} ({category.score}/100)
-            </p>
-            <p>{category.comment}</p>
+        {feedback?.categoryScores && (
+          <div className="flex flex-col gap-3">
+            {Object.entries(feedback.categoryScores).map(
+              ([category, score], index) => (
+                <div key={index} className="flex flex-col gap-1">
+                  <p className="font-bold">
+                    {index + 1}. {category
+                      .replace(/([A-Z])/g, " $1")
+                      .toLowerCase()
+                      .trim()
+                      .split(" ")
+                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(" ")} ({score}/100)
+                  </p>
+                </div>
+              )
+            )}
           </div>
-        ))}
+        )}
       </div>
 
       <div className="flex flex-col gap-3">
