@@ -39,26 +39,47 @@ const Agent = ({
   const retryCountRef = useRef(0);
   const maxRetries = 3;
 
-  // Suppress Daily.co library errors globally
+  // Suppress Daily.co library errors globally - both at event level and console level
   useEffect(() => {
+    const originalError = console.error;
+    const ignoredPatterns = [
+      "Meeting ended",
+      "room was deleted",
+      "Exiting meeting",
+      "ejection",
+      "daily",
+    ];
+
+    // Override console.error to filter out Daily.co messages
+    console.error = (...args: any[]) => {
+      const message = args.map(arg => {
+        if (typeof arg === 'string') return arg;
+        if (arg instanceof Error) return arg.message;
+        return String(arg);
+      }).join(" ");
+
+      const shouldIgnore = ignoredPatterns.some(pattern =>
+        message.toLowerCase().includes(pattern.toLowerCase())
+      );
+
+      if (!shouldIgnore) {
+        originalError.apply(console, args);
+      }
+    };
+
     const handleError = (event: ErrorEvent) => {
       const errorMsg = event.message || "";
-      const ignoredErrors = [
-        "Meeting ended",
-        "room was deleted",
-        "Exiting meeting",
-        "ejection",
-        "daily",
-      ];
-
-      if (ignoredErrors.some(err => errorMsg.toLowerCase().includes(err.toLowerCase()))) {
+      if (ignoredPatterns.some(err => errorMsg.toLowerCase().includes(err.toLowerCase()))) {
         event.preventDefault();
         return false;
       }
     };
 
     window.addEventListener("error", handleError);
-    return () => window.removeEventListener("error", handleError);
+    return () => {
+      console.error = originalError;
+      window.removeEventListener("error", handleError);
+    };
   }, []);
 
   useEffect(() => {
