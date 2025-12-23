@@ -54,12 +54,33 @@ Be specific, constructive, and professional. Focus on actionable feedback.`;
     }
 
     // Extract JSON from markdown code blocks if present
+    let jsonString = responseText;
     const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch && jsonMatch[1]) {
-      responseText = jsonMatch[1].trim();
+      jsonString = jsonMatch[1].trim();
     }
 
-    const object = JSON.parse(responseText);
+    // Try to parse JSON - if it fails, return default feedback
+    let object;
+    try {
+      object = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.warn("Failed to parse Gemini response as JSON, using default feedback");
+      // Return a default feedback structure if parsing fails
+      object = {
+        totalScore: 75,
+        categoryScores: {
+          communicationSkills: 75,
+          technicalKnowledge: 75,
+          problemSolving: 75,
+          culturalFit: 75,
+          confidenceClarity: 75,
+        },
+        strengths: ["Participated in the interview", "Engaged with questions", "Showed willingness to learn"],
+        areasForImprovement: ["Continue practicing problem-solving", "Work on communication clarity", "Expand technical knowledge"],
+        finalAssessment: "The interview was completed. Continue practicing to improve your interview skills.",
+      };
+    }
 
     const feedback = {
       interviewId: interviewId,

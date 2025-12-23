@@ -41,6 +41,26 @@ const Agent = ({
 
   // Suppress Daily.co library errors at window level only
   useEffect(() => {
+    // Override console error for specific Daily.co messages
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    console.error = (...args: any[]) => {
+      const msg = String(args[0] || "").toLowerCase();
+      if (msg.includes("meeting ended") || msg.includes("ejection")) {
+        return; // Suppress
+      }
+      originalError.apply(console, args);
+    };
+
+    console.warn = (...args: any[]) => {
+      const msg = String(args[0] || "").toLowerCase();
+      if (msg.includes("ejection")) {
+        return; // Suppress
+      }
+      originalWarn.apply(console, args);
+    };
+
     const handleError = (event: ErrorEvent) => {
       const errorMsg = (event.message || "").toLowerCase();
       const ignoredErrors = [
@@ -57,7 +77,11 @@ const Agent = ({
     };
 
     window.addEventListener("error", handleError);
-    return () => window.removeEventListener("error", handleError);
+    return () => {
+      console.error = originalError;
+      console.warn = originalWarn;
+      window.removeEventListener("error", handleError);
+    };
   }, []);
 
   useEffect(() => {
@@ -177,7 +201,13 @@ const Agent = ({
       if (type === "generate") {
         router.push("/");
       } else {
-        handleGenerateFeedback(messages);
+        // Only generate feedback if we have messages from the interview
+        if (messages.length > 0) {
+          handleGenerateFeedback(messages);
+        } else {
+          console.log("No messages recorded, redirecting to home");
+          router.push("/");
+        }
       }
     }
   }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);

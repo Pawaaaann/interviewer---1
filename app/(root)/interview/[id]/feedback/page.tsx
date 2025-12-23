@@ -22,6 +22,11 @@ const Feedback = async ({ params }: RouteParams) => {
     userId: user?.id!,
   });
 
+  // If no feedback available, redirect to dashboard
+  if (!feedback) {
+    redirect("/");
+  }
+
   return (
     <section className="section-feedback">
       <div className="flex flex-row justify-center">
