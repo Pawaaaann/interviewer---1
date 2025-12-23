@@ -47,6 +47,8 @@ const Agent = ({
         "Meeting ended",
         "room was deleted",
         "Exiting meeting",
+        "ejection",
+        "daily",
       ];
 
       if (ignoredErrors.some(err => errorMsg.toLowerCase().includes(err.toLowerCase()))) {
@@ -152,17 +154,22 @@ const Agent = ({
     const handleGenerateFeedback = async (messages: SavedMessage[]) => {
       console.log("handleGenerateFeedback");
 
-      const { success, feedbackId: id } = await createFeedback({
-        interviewId: interviewId!,
-        userId: userId!,
-        transcript: messages,
-        feedbackId,
-      });
+      try {
+        const result = await createFeedback({
+          interviewId: interviewId!,
+          userId: userId!,
+          transcript: messages,
+          feedbackId,
+        });
 
-      if (success && id) {
-        router.push(`/interview/${interviewId}/feedback`);
-      } else {
-        console.log("Error saving feedback");
+        if (result && result.success) {
+          router.push(`/interview/${interviewId}/feedback`);
+        } else {
+          console.log("Error saving feedback - no success");
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Failed to generate feedback:", error);
         router.push("/");
       }
     };
