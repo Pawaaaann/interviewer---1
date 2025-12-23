@@ -39,6 +39,26 @@ const Agent = ({
   const retryCountRef = useRef(0);
   const maxRetries = 3;
 
+  // Suppress Daily.co library errors globally
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      const errorMsg = event.message || "";
+      const ignoredErrors = [
+        "Meeting ended",
+        "room was deleted",
+        "Exiting meeting",
+      ];
+
+      if (ignoredErrors.some(err => errorMsg.toLowerCase().includes(err.toLowerCase()))) {
+        event.preventDefault();
+        return false;
+      }
+    };
+
+    window.addEventListener("error", handleError);
+    return () => window.removeEventListener("error", handleError);
+  }, []);
+
   useEffect(() => {
     const onCallStart = () => {
       console.log("[VAPI] Call started");
