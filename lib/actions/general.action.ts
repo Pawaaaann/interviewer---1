@@ -177,7 +177,6 @@ export async function getLatestInterviews(
   } catch (error: any) {
     // If index is missing, fall back to simpler query and filter client-side
     if (error.code === 9 || error.message?.includes('index')) {
-      console.warn("Firestore index missing for getLatestInterviews, using fallback");
       try {
         // Simpler query: just get finalized interviews and filter/sort client-side
         const interviews = await db
@@ -238,7 +237,6 @@ export async function getInterviewsByUserId(
   } catch (error: any) {
     // If index is missing, fall back to simpler query and sort client-side
     if (error.code === 9 || error.message?.includes('index')) {
-      console.warn("Firestore index missing, using fallback query");
       try {
         const interviews = await db
           .collection("interviews")

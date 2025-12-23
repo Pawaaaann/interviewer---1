@@ -149,13 +149,11 @@ export async function getCurrentUser(): Promise<User | null> {
           } as User;
         }
       } catch (dbError: any) {
-        console.warn("Firestore not available:", dbError.message);
-        // Continue to fallback below
+        // Firestore not available, continue to fallback below
       }
     }
 
     // Fallback: Return basic user info from session token when Firestore is unavailable
-    console.log("Using fallback authentication (Firestore unavailable)");
     return {
       id: decodedClaims.uid,
       name: decodedClaims.name || decodedClaims.email?.split('@')[0] || "User",
