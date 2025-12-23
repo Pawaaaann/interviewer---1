@@ -15,14 +15,15 @@ export const getVapi = () => {
   
   if (!vapiInstance) {
     vapiInstance = new Vapi(token!);
+    console.log("[VAPI] Initialized with token");
   }
   
   return vapiInstance;
 };
 
-// Keep vapi export for backwards compatibility
+// Export singleton instance
 export const vapi = isVapiConfigured()
-  ? new Vapi(token!)
+  ? getVapi()
   : ({
       start: () => Promise.reject(new Error("VAPI is not configured. Please set NEXT_PUBLIC_VAPI_WEB_TOKEN.")),
       stop: () => Promise.resolve(),
