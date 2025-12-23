@@ -89,6 +89,11 @@ const Agent = ({
         "disconnect",
         "Signaling connection",
         "meeting state",
+        "room was deleted",
+        "Exiting meeting",
+        "daily-call-join-error",
+        "daily-error",
+        "start-method-error",
       ];
 
       const shouldIgnore = ignoredMessages.some(msg => 
