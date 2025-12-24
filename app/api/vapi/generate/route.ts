@@ -4,13 +4,9 @@ import { getRandomInterviewCover } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import { interviewDomains } from "@/constants";
 
-// Using Replit AI Integrations for Gemini access
+// Using Google Generative AI directly
 const ai = new GoogleGenAI({
-  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
-  httpOptions: {
-    apiVersion: "",
-    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
-  },
+  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
 export async function POST(request: Request) {
