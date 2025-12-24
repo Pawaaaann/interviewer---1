@@ -4,15 +4,6 @@ import { getRandomInterviewCover } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import { interviewDomains } from "@/constants";
 
-// Using Replit AI Integrations for Gemini access
-const ai = new GoogleGenAI({
-  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
-  httpOptions: {
-    apiVersion: "",
-    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
-  },
-});
-
 export async function POST(request: Request) {
   const { type, role, level, techstack, amount, domain } = await request.json();
 
@@ -34,6 +25,18 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Use only the official Google Generative AI key and default endpoint
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+    if (!apiKey) {
+      return Response.json({
+        success: false,
+        error: "Missing GOOGLE_GENERATIVE_AI_API_KEY. Please set it in your environment and restart the server."
+      }, { status: 500 });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
     // Check if database is available
     if (!db) {
       return Response.json({ 
@@ -94,8 +97,22 @@ No "/" or "*" characters.`;
     }, { status: 200 });
   } catch (error: any) {
     console.error("Error:", error);
-    const errorMessage = error?.message || "An unexpected error occurred";
-    return Response.json({ success: false, error: errorMessage }, { status: 500 });
+    const errObj: any = error?.error || error;
+    const statusCandidate = errObj?.statusCode || errObj?.status || errObj?.code;
+    const numericStatus = typeof statusCandidate === "string" ? parseInt(statusCandidate, 10) : statusCandidate;
+
+    const message = errObj?.message || "An unexpected error occurred";
+    const reason = errObj?.details?.[0]?.reason || errObj?.reason;
+
+    if (reason === "API_KEY_INVALID" || /API key not valid/i.test(message)) {
+      return Response.json(
+        { success: false, error: "Invalid Gemini API key. Verify AI_INTEGRATIONS_GEMINI_API_KEY and that 'Generative Language API' is enabled for your project." },
+        { status: 400 }
+      );
+    }
+
+    const status = Number.isInteger(numericStatus) && numericStatus >= 400 && numericStatus < 600 ? numericStatus : 500;
+    return Response.json({ success: false, error: message }, { status });
   }
 }
 
