@@ -57,7 +57,14 @@ No "/" or "*" characters.`;
     // Parse and validate questions with error handling
     let parsedQuestions;
     try {
-      parsedQuestions = JSON.parse(questions);
+      // Extract JSON from markdown code blocks if present
+      let jsonString = questions;
+      const jsonMatch = questions.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch && jsonMatch[1]) {
+        jsonString = jsonMatch[1].trim();
+      }
+      
+      parsedQuestions = JSON.parse(jsonString);
       if (!Array.isArray(parsedQuestions)) {
         throw new Error("Questions must be an array");
       }
