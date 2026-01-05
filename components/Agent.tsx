@@ -99,7 +99,10 @@ const Agent = ({
 
     const onMessage = (message: Message) => {
       if (message.type === "transcript" && message.transcriptType === "final") {
-        const newMessage = { role: message.role, content: message.transcript };
+        const newMessage: SavedMessage = { 
+          role: message.role as "user" | "assistant", 
+          content: message.transcript 
+        };
         setMessages((prev) => [...prev, newMessage]);
       }
     };
@@ -174,14 +177,14 @@ const Agent = ({
       setLastMessage(messages[messages.length - 1].content);
     }
 
-    const handleGenerateFeedback = async (messages: SavedMessage[]) => {
-      console.log("handleGenerateFeedback");
+    const handleGenerateFeedback = async (currentMessages: SavedMessage[]) => {
+      console.log("handleGenerateFeedback with messages:", currentMessages.length);
 
       try {
         const result = await createFeedback({
           interviewId: interviewId!,
           userId: userId!,
-          transcript: messages,
+          transcript: currentMessages,
           feedbackId,
         });
 
@@ -201,9 +204,13 @@ const Agent = ({
       if (type === "generate") {
         router.push("/");
       } else {
+        // Capture the latest messages state
+        const finalMessages = [...messages];
+        console.log("Call finished. Messages count:", finalMessages.length);
+        
         // Only generate feedback if we have messages from the interview
-        if (messages.length > 0) {
-          handleGenerateFeedback(messages);
+        if (finalMessages.length > 0) {
+          handleGenerateFeedback(finalMessages);
         } else {
           console.log("No messages recorded, redirecting to home");
           router.push("/");
