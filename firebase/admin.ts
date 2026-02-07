@@ -14,7 +14,14 @@ function initFirebaseAdmin() {
     const privateKeyB64 = process.env.FIREBASE_PRIVATE_KEY_BASE64;
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT; // JSON string of full service account
 
-    if (!projectId || !clientEmail || (!privateKey && !privateKeyB64 && !serviceAccountJson)) {
+    // Determine if we have sufficient credentials from any supported source
+    const hasServiceJson = !!serviceAccountJson;
+    const hasProjectAndEmail = !!projectId && !!clientEmail;
+    const hasTextKey = !!privateKey;
+    const hasB64Key = !!privateKeyB64;
+    const hasAnyCreds = hasServiceJson || (hasProjectAndEmail && (hasTextKey || hasB64Key));
+
+    if (!hasAnyCreds) {
       console.warn("Firebase Admin not properly configured - missing environment variables");
       // Initialize with minimal config for development
       try {
@@ -44,7 +51,7 @@ function initFirebaseAdmin() {
         }
 
         // 1) If base64 private key is provided, decode it
-        if (!credentials && privateKeyB64) {
+        if (!credentials && privateKeyB64 && hasProjectAndEmail) {
           try {
             const decoded = Buffer.from(privateKeyB64, "base64").toString("utf8");
             credentials = { projectId, clientEmail, privateKey: decoded };
@@ -55,59 +62,70 @@ function initFirebaseAdmin() {
 
         // 2) Otherwise, normalize the text private key from environment to a valid PEM string
         let formattedPrivateKey = privateKey as string;
+        if (!credentials && privateKey && hasProjectAndEmail) {
 
-        // 1) Trim whitespace and remove surrounding single/double quotes
-        formattedPrivateKey = formattedPrivateKey.trim().replace(/^["']|["']$/g, "");
-        //    Also remove surrounding escaped quotes (e.g., \"...\")
-        formattedPrivateKey = formattedPrivateKey.replace(/^\\"|\\"$/g, "");
+          // 1) Trim whitespace and remove surrounding single/double quotes
+          formattedPrivateKey = formattedPrivateKey.trim().replace(/^["']|["']$/g, "");
+          //    Also remove surrounding escaped quotes (e.g., \"...\")
+          formattedPrivateKey = formattedPrivateKey.replace(/^\\"|\\"$/g, "");
 
-        // 2) Handle double-escaped newlines often seen when the key was JSON-stringified ("\\n")
-        //    Replace \\n with \n first, then replace literal \n with real newlines
-        formattedPrivateKey = formattedPrivateKey.replace(/\\\\n/g, "\\n");
-        formattedPrivateKey = formattedPrivateKey.replace(/\\n/g, "\n");
+          // 2) Handle double-escaped newlines often seen when the key was JSON-stringified ("\\n")
+          //    Replace \\\\n+          //    with \n first, then replace literal \n with real newlines
+          formattedPrivateKey = formattedPrivateKey.replace(/\\\\n/g, "\\n");
+          formattedPrivateKey = formattedPrivateKey.replace(/\\n/g, "\n");
 
-        // 3) Normalize CRLF/CR to LF just in case
-        formattedPrivateKey = formattedPrivateKey.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+          // 3) Normalize CRLF/CR to LF just in case
+          formattedPrivateKey = formattedPrivateKey.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-        // 4) Remove stray control characters (except newlines)
-        formattedPrivateKey = formattedPrivateKey.replace(/[\u0000-\u0009\u000B-\u000C\u000E-\u001F]/g, "");
+          // 4) Remove stray control characters (except newlines)
+          formattedPrivateKey = formattedPrivateKey.replace(/[\u0000-\u0009\u000B-\u000C\u000E-\u001F]/g, "");
 
-        // 5) Normalize header spacing and support RSA PRIVATE KEY variant
-        formattedPrivateKey = formattedPrivateKey.replace(/-----BEGIN\s+PRIVATE\s+KEY-----/g, "-----BEGIN PRIVATE KEY-----");
-        formattedPrivateKey = formattedPrivateKey.replace(/-----END\s+PRIVATE\s+KEY-----/g, "-----END PRIVATE KEY-----");
-        const hasPkcs8Headers = formattedPrivateKey.includes("-----BEGIN PRIVATE KEY-----") && formattedPrivateKey.includes("-----END PRIVATE KEY-----");
-        const hasRsaHeaders = formattedPrivateKey.includes("-----BEGIN RSA PRIVATE KEY-----") && formattedPrivateKey.includes("-----END RSA PRIVATE KEY-----");
+          // 5) Normalize header spacing and support RSA PRIVATE KEY variant
+          formattedPrivateKey = formattedPrivateKey.replace(/-----BEGIN\s+PRIVATE\s+KEY-----/g, "-----BEGIN PRIVATE KEY-----");
+          formattedPrivateKey = formattedPrivateKey.replace(/-----END\s+PRIVATE\s+KEY-----/g, "-----END PRIVATE KEY-----");
+          const hasPkcs8Headers = formattedPrivateKey.includes("-----BEGIN PRIVATE KEY-----") && formattedPrivateKey.includes("-----END PRIVATE KEY-----");
+          const hasRsaHeaders = formattedPrivateKey.includes("-----BEGIN RSA PRIVATE KEY-----") && formattedPrivateKey.includes("-----END RSA PRIVATE KEY-----");
 
-        // 6) Final sanity checks
-        if (!hasPkcs8Headers && !hasRsaHeaders) {
-          if (!credentials) {
-            console.error("Private key (text) is missing PEM headers. Expected PKCS#8 or RSA headers. If on Windows, consider using FIREBASE_PRIVATE_KEY_BASE64 or FIREBASE_SERVICE_ACCOUNT.");
-            throw new Error("Invalid private key format: missing PEM headers");
+          // 6) Final sanity checks
+          if (!hasPkcs8Headers && !hasRsaHeaders) {
+            if (!credentials) {
+              console.error("Private key (text) is missing PEM headers. Expected PKCS#8 or RSA headers. If on Windows, consider using FIREBASE_PRIVATE_KEY_BASE64 or FIREBASE_SERVICE_ACCOUNT.");
+              throw new Error("Invalid private key format: missing PEM headers");
+            }
           }
+
+          // Safe diagnostics (no key content)
+          const lineCount = (formattedPrivateKey.match(/\n/g) || []).length + 1;
+          const startsWith = formattedPrivateKey.substring(0, 31);
+          const endsWith = formattedPrivateKey.substring(formattedPrivateKey.length - 31);
+          console.log("[Firebase Admin] Key diagnostics:", {
+            length: formattedPrivateKey.length,
+            lineCount,
+            hasPkcs8Headers,
+            hasRsaHeaders,
+            startsWith,
+            endsWith,
+          });
+
+          credentials = { projectId, clientEmail, privateKey: formattedPrivateKey };
         }
 
-        // Safe diagnostics (no key content)
-        const lineCount = (formattedPrivateKey.match(/\n/g) || []).length + 1;
-        const startsWith = formattedPrivateKey.substring(0, 31);
-        const endsWith = formattedPrivateKey.substring(formattedPrivateKey.length - 31);
-        console.log("[Firebase Admin] Key diagnostics:", {
-          length: formattedPrivateKey.length,
-          lineCount,
-          hasPkcs8Headers,
-          hasRsaHeaders,
-          startsWith,
-          endsWith,
-        });
+        const finalCreds = credentials;
 
-        const finalCreds = credentials || { projectId, clientEmail, privateKey: formattedPrivateKey };
-
-        initializeApp({
-          credential: cert({
-            projectId: finalCreds.projectId,
-            clientEmail: finalCreds.clientEmail,
-            privateKey: finalCreds.privateKey,
-          }),
-        });
+        if (finalCreds) {
+          initializeApp({
+            credential: cert({
+              projectId: finalCreds.projectId,
+              clientEmail: finalCreds.clientEmail,
+              privateKey: finalCreds.privateKey,
+            }),
+          });
+        } else {
+          // Should not happen, but keep a safe fallback
+          initializeApp({
+            projectId: projectId || "demo-project",
+          });
+        }
 
         console.log("Firebase Admin initialized successfully with credentials");
       } catch (error) {
