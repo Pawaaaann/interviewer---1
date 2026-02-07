@@ -4,15 +4,6 @@ import { getRandomInterviewCover } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import { interviewDomains } from "@/constants";
 
-// Using Replit AI Integrations for Gemini access
-const ai = new GoogleGenAI({
-  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
-  httpOptions: {
-    apiVersion: "",
-    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
-  },
-});
-
 export async function POST(request: Request) {
   const { type, role, level, techstack, amount, domain } = await request.json();
 
@@ -122,7 +113,7 @@ No "/" or "*" characters.`;
 
     if (reason === "API_KEY_INVALID" || /API key not valid/i.test(message)) {
       return Response.json(
-        { success: false, error: "Invalid Gemini API key. Verify AI_INTEGRATIONS_GEMINI_API_KEY and that 'Generative Language API' is enabled for your project." },
+        { success: false, error: "Invalid Gemini API key. Verify GOOGLE_GENERATIVE_AI_API_KEY and that 'Generative Language API' is enabled for your project." },
         { status: 400 }
       );
     }
